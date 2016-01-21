@@ -17,11 +17,11 @@ var exec = require('cordova/exec');
  * @param {Boolean} trustAllCertificates Trusts any certificate when the connection is done over HTTPS.
  * @returns {void}
  */
-exports.open = function(uri, fileName, success, error, trustAllCertificates) {
+exports.open = function(uri, fileName, success, error, onprogress, trustAllCertificates) {
   if (!uri || arguments.length === 0) { return false; }
 
   if (uri.match('http')) {
-    downloadAndOpen(uri, fileName, success, error, trustAllCertificates);
+    downloadAndOpen(uri, fileName, success, error, onprogress, trustAllCertificates);
   } else {
     uri = encodeURI(uri);
     exec(onSuccess.bind(this, uri, success),
@@ -38,7 +38,7 @@ exports.open = function(uri, fileName, success, error, trustAllCertificates) {
  * @param {Boolean} trustAllCertificates Trusts any certificate when the connection is done over HTTPS.
  * @returns {void}
  */
-function downloadAndOpen(url, fileName, success, error, trustAllCertificates) {
+function downloadAndOpen(url, fileName, success, error, onprogress, trustAllCertificates) {
   var ft = new FileTransfer();
   var ios = cordova.file.cacheDirectory;
   var ext = cordova.file.externalCacheDirectory;
@@ -54,6 +54,9 @@ function downloadAndOpen(url, fileName, success, error, trustAllCertificates) {
     // Defaults to false
     trustAllCertificates = false;
   }
+
+  if (onprogress)
+    ft.onprogress = onprogress;
 
   ft.download(url, path,
       function done(entry) {
