@@ -12,6 +12,8 @@ import android.webkit.MimeTypeMap;
 import android.content.ActivityNotFoundException;
 import android.os.Build;
 import android.os.StrictMode;
+import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.CordovaInterface;
 
 /**
  * This class starts an activity for an intent to view files
