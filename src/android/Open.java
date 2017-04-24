@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.webkit.MimeTypeMap;
 import android.content.ActivityNotFoundException;
 import android.os.Build;
+import android.os.StrictMode;
 
 /**
  * This class starts an activity for an intent to view files
@@ -19,6 +20,12 @@ public class Open extends CordovaPlugin {
 
   public static final String OPEN_ACTION = "open";
 
+  @Override
+  public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+    StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+    StrictMode.setVmPolicy(builder.build());
+  }
+  
   @Override
   public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
     if (action.equals(OPEN_ACTION)) {
