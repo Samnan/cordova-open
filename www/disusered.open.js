@@ -14,14 +14,15 @@ var exec = require('cordova/exec');
  * @param {String} uri File URI
  * @param {Function} success Success callback
  * @param {Function} error Failure callback
+ * @param {Function} progress Callback for download progress reporting
  * @param {Boolean} trustAllCertificates Trusts any certificate when the connection is done over HTTPS.
  * @returns {void}
  */
-exports.open = function(uri, fileName, success, error, onprogress, trustAllCertificates) {
+exports.open = function(uri, fileName, success, error, progress, trustAllCertificates) {
   if (!uri || arguments.length === 0) { return false; }
 
   if (uri.match('http')) {
-    downloadAndOpen(uri, fileName, success, error, onprogress, trustAllCertificates);
+    downloadAndOpen(uri, fileName, success, error, progress, trustAllCertificates);
   } else {
     uri = encodeURI(uri);
     exec(onSuccess.bind(this, uri, success),
@@ -35,10 +36,11 @@ exports.open = function(uri, fileName, success, error, onprogress, trustAllCerti
  * @param {String} url File URI
  * @param {Function} success Success callback
  * @param {Function} error Failure callback
+ * @param {Function} progress Callback for download progress reporting
  * @param {Boolean} trustAllCertificates Trusts any certificate when the connection is done over HTTPS.
  * @returns {void}
  */
-function downloadAndOpen(url, fileName, success, error, onprogress, trustAllCertificates) {
+function downloadAndOpen(url, fileName, success, error, progress, trustAllCertificates) {
   var ft = new FileTransfer();
   var ios = cordova.file.cacheDirectory;
   var ext = cordova.file.externalCacheDirectory;
@@ -55,8 +57,9 @@ function downloadAndOpen(url, fileName, success, error, onprogress, trustAllCert
     trustAllCertificates = false;
   }
 
-  if (onprogress)
-    ft.onprogress = onprogress;
+  if (progress && typeof progress === 'function') {
+    ft.onprogress = progress;
+  }
 
   ft.download(url, path,
       function done(entry) {
@@ -74,12 +77,17 @@ function downloadAndOpen(url, fileName, success, error, onprogress, trustAllCert
  *
  * @param {String} path File URI
  * @param {Function} callback Callback
+ * @param {type} type of success event
  * @returns {String} File URI
  */
-function onSuccess(path, callback) {
-  fire('success', path);
+function onSuccess(path, callback, type) {
+  if(type !== 'resume') {
+      fire('open.success', path);
   if (typeof callback === 'function') {
     callback(path);
+  }
+  } else {
+      fire('resume', path);
   }
   return path;
 }
@@ -92,7 +100,7 @@ function onSuccess(path, callback) {
  */
 function onError(callback) {
   var code = (arguments.length > 1) ? arguments[1] : 0;
-  fire('error', code);
+  fire('open.error', code);
   if (typeof callback === 'function') {
     callback(code);
   }
@@ -112,9 +120,8 @@ function fire(event, data) {
   var payload = {};
 
   channel.onCordovaReady.subscribe(function() {
-    var name = 'open.' + event;
     var prop = (event === 'error') ? event : 'data';
     payload[prop] = data;
-    cordova.fireDocumentEvent(name, payload);
+    cordova.fireDocumentEvent(event, payload);
   });
 }

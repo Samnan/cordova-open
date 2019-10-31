@@ -8,6 +8,7 @@
  *  @param command An array of arguments passed from javascript
  */
 - (void)open:(CDVInvokedUrlCommand *)command {
+  self.callbackId = command.callbackId;
 
   // Check command.arguments here.
   [self.commandDelegate runInBackground:^{
@@ -30,11 +31,14 @@
           
         [previewCtrl.navigationItem setRightBarButtonItem:nil];
           
-        [self.viewController presentViewController:previewCtrl animated:YES completion:nil];
+        dispatch_async(dispatch_get_main_queue(), ^{
+          [self.viewController presentViewController:previewCtrl animated:YES completion:nil];
+        });
 
         NSLog(@"cordova.disusered.open - Success!");
         commandResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                           messageAsString:@""];
+        [commandResult setKeepCallback:[NSNumber numberWithBool:YES]];
 
       } else {
         NSLog(@"cordova.disusered.open - Invalid file URL");
@@ -60,6 +64,13 @@
 - (id<QLPreviewItem>)previewController:(QLPreviewController *)controller
                     previewItemAtIndex:(NSInteger)index {
   return self;
+}
+
+- (void)previewControllerDidDismiss:(QLPreviewController *)controller {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"resume"];
+    [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
+    self.callbackId = nil;
 }
 
 #pragma - QLPreviewItem Protocol
